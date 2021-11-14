@@ -1,10 +1,17 @@
+from dns import exception
 from flask import Flask
 from flask import  jsonify, make_response,  request,make_response,abort
 import json
 
 from flask import request
+from flask.json import dump
+from pymongo import MongoClient
+import ssl
+
 app = Flask(__name__)
 
+client= MongoClient('mongodb+srv://test:test@cluster0.oh46f.mongodb.net/DeportesDB',ssl_cert_reqs=ssl.CERT_NONE)
+db= client.ContactDB
 contacto= [
     {
         'id':1,
@@ -43,18 +50,34 @@ def recibirContacto():
 
 @app.route('/contactoDb',methods = ['POST'] )
 def recibirContactoDb():
-    data= json.loads(request.data)
-    idContact= data['id']
-    nombreContacto= data['nombre']
+    try:
+        data= json.loads(request.data)
+        idContact= data['id']
+        nombreContacto= data['nombre']
 
-    contactoTmp={
-        'numeroDocumento': idContact,
-        'nombre':nombreContacto
-    }
-    
-    return jsonify(
-        {'contacto':contacto}
-    )
+        contactoTmp={
+            'numeroDocumento': idContact,
+            'nombre':nombreContacto
+        }
+        db.Contacts.insert_one(contactoTmp)
+
+
+        return jsonify(
+            {'status':"sussess"}
+        ), 200
+    except Exception as error:
+        return dump({'Error': error})
+
+
+@app.route('/contactoConsultaDb',methods = ['POST'] )
+def recibirContactoConsultaDb():
+    try:
+        for x in db.Contacts.find():
+            print(x)
+
+        return json.loads(request.data)
+    except Exception as error:
+        return dump({'Error': error})
 
 if __name__ =='__main__':
     app.run(debug=True)
